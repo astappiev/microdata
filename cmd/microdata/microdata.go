@@ -11,7 +11,7 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/namsral/microdata"
+	"github.com/astappiev/microdata"
 )
 
 var fnmap = template.FuncMap{
