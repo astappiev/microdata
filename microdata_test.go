@@ -1,6 +1,3 @@
-// Copyright 2015 Lars Wiegman. All rights reserved. Use of this source code is
-// governed by a BSD-style license that can be found in the LICENSE file.
-
 package microdata
 
 import (
@@ -9,14 +6,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 )
 
 func TestParseItemScope(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Person">
+		<div itemscope itemtype="https://example.com/Person">
 			<p>My name is <span itemprop="name">Penelope</span>.</p>
 		</div>`
 
@@ -31,14 +27,14 @@ func TestParseItemScope(t *testing.T) {
 
 func TestParseItemType(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Person">
+		<div itemscope itemtype="https://example.com/Person">
 			<p>My name is <span itemprop="name">Penelope</span>.</p>
 		</div>`
 
 	data := ParseData(html, t)
 
 	result := data.Items[0].Types[0]
-	expected := "http://example.com/Person"
+	expected := "https://example.com/Person"
 	if result != expected {
 		t.Errorf("Result should have been \"%s\", but it was \"%s\"", expected, result)
 	}
@@ -46,7 +42,7 @@ func TestParseItemType(t *testing.T) {
 
 func TestParseItemRef(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Movie" itemref="properties">
+		<div itemscope itemtype="https://example.com/Movie" itemref="properties">
 			<p><span itemprop="name">Rear Window</span> is a movie from 1954.</p>
 		</div>
 		<ul id="properties">
@@ -73,7 +69,7 @@ func TestParseItemRef(t *testing.T) {
 
 func TestParseItemProp(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Person">
+		<div itemscope itemtype="https://example.com/Person">
 			<p>My name is <span itemprop="name">Penelope</span>.</p>
 		</div>`
 
@@ -88,7 +84,7 @@ func TestParseItemProp(t *testing.T) {
 
 func TestParseItemId(t *testing.T) {
 	html := `
-		<ul itemscope itemtype="http://example.com/Book" itemid="urn:isbn:978-0141196404">
+		<ul itemscope itemtype="https://example.com/Book" itemid="urn:isbn:978-0141196404">
 			<li itemprop="title">The Black Cloud</li>
 			<li itemprop="author">Fred Hoyle</li>
 		</ul>`
@@ -104,13 +100,13 @@ func TestParseItemId(t *testing.T) {
 
 func TestParseHref(t *testing.T) {
 	html := `
-		<html itemscope itemtype="http://example.com/Person">
+		<html itemscope itemtype="https://example.com/Person">
 			<head>
-				<link itemprop="linkTest" href="http://example.com/cde">
+				<link itemprop="linkTest" href="https://example.com/cde">
 			<head>
 			<div>
-				<a itemprop="aTest" href="http://example.com/abc" /></a>
-				<area itemprop="areaTest" href="http://example.com/bcd" />
+				<a itemprop="aTest" href="https://example.com/abc" /></a>
+				<area itemprop="areaTest" href="https://example.com/bcd" />
 			</div>
 		</div>`
 
@@ -118,9 +114,9 @@ func TestParseHref(t *testing.T) {
 		propName string
 		expected string
 	}{
-		{"aTest", "http://example.com/abc"},
-		{"areaTest", "http://example.com/bcd"},
-		{"linkTest", "http://example.com/cde"},
+		{"aTest", "https://example.com/abc"},
+		{"areaTest", "https://example.com/bcd"},
+		{"linkTest", "https://example.com/cde"},
 	}
 
 	data := ParseData(html, t)
@@ -134,27 +130,27 @@ func TestParseHref(t *testing.T) {
 
 func TestParseSrc(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Videocast">
-			<audio itemprop="audioTest" src="http://example.com/abc" />
-			<embed itemprop="embedTest" src="http://example.com/bcd" />
-			<iframe itemprop="iframeTest" src="http://example.com/cde"></iframe>
-			<img itemprop="imgTest" src="http://example.com/def" />
-			<source itemprop="sourceTest" src="http://example.com/efg" />
-			<track itemprop="trackTest" src="http://example.com/fgh" />
-			<video itemprop="videoTest" src="http://example.com/ghi" />
+		<div itemscope itemtype="https://example.com/Videocast">
+			<audio itemprop="audioTest" src="https://example.com/abc" />
+			<embed itemprop="embedTest" src="https://example.com/bcd" />
+			<iframe itemprop="iframeTest" src="https://example.com/cde"></iframe>
+			<img itemprop="imgTest" src="https://example.com/def" />
+			<source itemprop="sourceTest" src="https://example.com/efg" />
+			<track itemprop="trackTest" src="https://example.com/fgh" />
+			<video itemprop="videoTest" src="https://example.com/ghi" />
 		</div>`
 
 	var testTable = []struct {
 		propName string
 		expected string
 	}{
-		{"audioTest", "http://example.com/abc"},
-		{"embedTest", "http://example.com/bcd"},
-		{"iframeTest", "http://example.com/cde"},
-		{"imgTest", "http://example.com/def"},
-		{"sourceTest", "http://example.com/efg"},
-		{"trackTest", "http://example.com/fgh"},
-		{"videoTest", "http://example.com/ghi"},
+		{"audioTest", "https://example.com/abc"},
+		{"embedTest", "https://example.com/bcd"},
+		{"iframeTest", "https://example.com/cde"},
+		{"imgTest", "https://example.com/def"},
+		{"sourceTest", "https://example.com/efg"},
+		{"trackTest", "https://example.com/fgh"},
+		{"videoTest", "https://example.com/ghi"},
 	}
 
 	data := ParseData(html, t)
@@ -168,7 +164,7 @@ func TestParseSrc(t *testing.T) {
 
 func TestParseMetaContent(t *testing.T) {
 	html := `
-		<html itemscope itemtype="http://example.com/Person">
+		<html itemscope itemtype="https://example.com/Person">
 			<meta itemprop="length" content="1.70" />
 		</html>`
 
@@ -183,7 +179,7 @@ func TestParseMetaContent(t *testing.T) {
 
 func TestParseValue(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Container">
+		<div itemscope itemtype="https://example.com/Container">
 			<data itemprop="capacity" value="80">80 liters</data>
 			<meter itemprop="volume" min="0" max="100" value="25">25%</meter>
 		</div>`
@@ -207,7 +203,7 @@ func TestParseValue(t *testing.T) {
 
 func TestParseDatetime(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Person">
+		<div itemscope itemtype="https://example.com/Person">
 			<time itemprop="birthDate" datetime="1993-10-02">22 years</time>
 		</div>`
 
@@ -222,7 +218,7 @@ func TestParseDatetime(t *testing.T) {
 
 func TestParseText(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Product">
+		<div itemscope itemtype="https://example.com/Product">
 			<span itemprop="price">3.95</span>
 		</div>`
 
@@ -237,7 +233,7 @@ func TestParseText(t *testing.T) {
 
 func TestParseMultiItemTypes(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Park http://example.com/Zoo">
+		<div itemscope itemtype="https://example.com/Park https://example.com/Zoo">
 			<span itemprop="name">ZooParc Overloon</span>
 		</div>`
 
@@ -252,7 +248,7 @@ func TestParseMultiItemTypes(t *testing.T) {
 
 func TestJSON(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Person">
+		<div itemscope itemtype="https://example.com/Person">
 			<p>My name is <span itemprop="name">Penelope</span>.</p>
 			<p>I am <date itemprop="age" value="22">22 years old.</span>.</p>
 		</div>`
@@ -264,7 +260,7 @@ func TestJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := string(b)
-	expected := `{"items":[{"type":["http://example.com/Person"],"properties":{"age":["22 years old.."],"name":["Penelope"]}}]}`
+	expected := `{"items":[{"type":["https://example.com/Person"],"properties":{"age":["22 years old.."],"name":["Penelope"]}}]}`
 	if result != expected {
 		t.Errorf("Result should have been \"%s\", but it was \"%s\"", expected, result)
 	}
@@ -272,10 +268,7 @@ func TestJSON(t *testing.T) {
 
 func TestParseHTML(t *testing.T) {
 	buf := bytes.NewBufferString(gallerySnippet)
-	u, _ := url.Parse("http://blog.example.com/progress-report")
-	contentType := "charset=utf-8"
-
-	_, result := ParseHTML(buf, contentType, u)
+	_, result := ParseHTML(buf, "charset=utf-8", "https://blog.example.com/progress-report")
 	if result != nil {
 		t.Errorf("Result should have been nil, but it was \"%s\"", result)
 	}
@@ -283,12 +276,12 @@ func TestParseHTML(t *testing.T) {
 
 func TestParseURL(t *testing.T) {
 	html := `
-		<div itemscope itemtype="http://example.com/Person">
+		<div itemscope itemtype="https://example.com/Person">
 			<p>My name is <span itemprop="name">Penelope</span>.</p>
 		</div>`
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(html))
+		_, _ = w.Write([]byte(html))
 	}))
 	defer ts.Close()
 
@@ -307,11 +300,11 @@ func TestParseURL(t *testing.T) {
 func TestNestedItems(t *testing.T) {
 	html := `
 		<div>
-			<div itemscope itemtype="http://example.com/Person">
+			<div itemscope itemtype="https://example.com/Person">
 				<p>My name is <span itemprop="name">Penelope</span>.</p>
 				<p>I am <date itemprop="age" value="22">22 years old.</span>.</p>
-				<div itemscope itemtype="http://example.com/Breadcrumb">
-					<a itemprop="url" href="http://example.com/users/1"><span itemprop="title">profile</span></a>
+				<div itemscope itemtype="https://example.com/Breadcrumb">
+					<a itemprop="url" href="https://example.com/users/1"><span itemprop="title">profile</span></a>
 				</div>
 			</div>
 		</div>`
@@ -323,7 +316,7 @@ func TestNestedItems(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := string(b)
-	expected := `{"items":[{"type":["http://example.com/Person"],"properties":{"age":["22 years old.."],"name":["Penelope"]}},{"type":["http://example.com/Breadcrumb"],"properties":{"title":["profile"],"url":["http://example.com/users/1"]}}]}`
+	expected := `{"items":[{"type":["https://example.com/Person"],"properties":{"age":["22 years old.."],"name":["Penelope"]}},{"type":["https://example.com/Breadcrumb"],"properties":{"title":["profile"],"url":["https://example.com/users/1"]}}]}`
 	if result != expected {
 		t.Errorf("Result should have been \"%s\", but it was \"%s\"", expected, result)
 	}
@@ -331,14 +324,8 @@ func TestNestedItems(t *testing.T) {
 
 func ParseData(html string, t *testing.T) *Microdata {
 	r := strings.NewReader(html)
-	u, _ := url.Parse("http://example.com")
 
-	p, err := newParser(r, "utf-8", u)
-	if err != nil {
-		t.Error(err)
-	}
-
-	data, err := p.parse()
+	data, err := ParseHTML(r, "charset=utf-8", "https://example.com")
 	if err != nil {
 		t.Error(err)
 	}
@@ -347,8 +334,7 @@ func ParseData(html string, t *testing.T) *Microdata {
 
 func TestParseW3CBookSnippet(t *testing.T) {
 	buf := bytes.NewBufferString(bookSnippet)
-	u, _ := url.Parse("")
-	data, err := ParseHTML(buf, "charset=utf-8", u)
+	data, err := ParseHTML(buf, "charset=utf-8", "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -358,7 +344,7 @@ func TestParseW3CBookSnippet(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := string(b)
-	expected := `{"items":[{"type":["http://vocab.example.net/book"],"properties":{"author":["Peter F. Hamilton"],"pubdate":["1996-01-26"],"title":["The Reality Dysfunction"]},"id":"urn:isbn:0-330-34032-8"}]}`
+	expected := `{"items":[{"type":["https://vocab.example.net/book"],"properties":{"author":["Peter F. Hamilton"],"pubdate":["1996-01-26"],"title":["The Reality Dysfunction"]},"id":"urn:isbn:0-330-34032-8"}]}`
 	if result != expected {
 		t.Errorf("Result should have been \"%s\", but it was \"%s\"", expected, result)
 	}
@@ -366,8 +352,7 @@ func TestParseW3CBookSnippet(t *testing.T) {
 
 func TestParseW3CGalleySnippet(t *testing.T) {
 	buf := bytes.NewBufferString(gallerySnippet)
-	u, _ := url.Parse("")
-	data, err := ParseHTML(buf, "charset=utf-8", u)
+	data, err := ParseHTML(buf, "charset=utf-8", "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -377,7 +362,7 @@ func TestParseW3CGalleySnippet(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := string(b)
-	expected := `{"items":[{"type":["http://n.whatwg.org/work"],"properties":{"license":["http://www.opensource.org/licenses/mit-license.php"],"title":["The house I found."],"work":["/images/house.jpeg"]}},{"type":["http://n.whatwg.org/work"],"properties":{"license":["http://www.opensource.org/licenses/mit-license.php"],"title":["The mailbox."],"work":["/images/mailbox.jpeg"]}}]}`
+	expected := `{"items":[{"type":["https://n.whatwg.org/work"],"properties":{"license":["https://www.opensource.org/licenses/mit-license.php"],"title":["The house I found."],"work":["/images/house.jpeg"]}},{"type":["https://n.whatwg.org/work"],"properties":{"license":["https://www.opensource.org/licenses/mit-license.php"],"title":["The mailbox."],"work":["/images/mailbox.jpeg"]}}]}`
 	if result != expected {
 		t.Errorf("Result should have been \"%s\", but it was \"%s\"", expected, result)
 	}
@@ -385,8 +370,7 @@ func TestParseW3CGalleySnippet(t *testing.T) {
 
 func TestParseW3CBlogSnippet(t *testing.T) {
 	buf := bytes.NewBufferString(blogSnippet)
-	u, _ := url.Parse("http://blog.example.com/progress-report")
-	data, err := ParseHTML(buf, "charset=utf-8", u)
+	data, err := ParseHTML(buf, "charset=utf-8", "https://blog.example.com/progress-report")
 	if err != nil {
 		t.Error(err)
 	}
@@ -396,7 +380,7 @@ func TestParseW3CBlogSnippet(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := string(b)
-	expected := `{"items":[{"type":["http://schema.org/BlogPosting"],"properties":{"comment":[{"type":["http://schema.org/UserComments"],"properties":{"commentTime":["2013-08-29"],"creator":[{"type":["http://schema.org/Person"],"properties":{"name":["Greg"]}}],"url":["http://blog.example.com/progress-report#c1"]}},{"type":["http://schema.org/UserComments"],"properties":{"commentTime":["2013-08-29"],"creator":[{"type":["http://schema.org/Person"],"properties":{"name":["Charlotte"]}}],"url":["http://blog.example.com/progress-report#c2"]}}],"datePublished":["2013-08-29"],"headline":["Progress report"],"url":["http://blog.example.com/progress-report?comments=0"]}}]}`
+	expected := `{"items":[{"type":["https://schema.org/BlogPosting"],"properties":{"comment":[{"type":["https://schema.org/UserComments"],"properties":{"commentTime":["2013-08-29"],"creator":[{"type":["https://schema.org/Person"],"properties":{"name":["Greg"]}}],"url":["https://blog.example.com/progress-report#c1"]}},{"type":["https://schema.org/UserComments"],"properties":{"commentTime":["2013-08-29"],"creator":[{"type":["https://schema.org/Person"],"properties":{"name":["Charlotte"]}}],"url":["https://blog.example.com/progress-report#c2"]}}],"datePublished":["2013-08-29"],"headline":["Progress report"],"url":["https://blog.example.com/progress-report?comments=0"]}}]}`
 	if result != expected {
 		t.Errorf("Result should have been \"%s\", but it was \"%s\"", expected, result)
 	}
@@ -406,20 +390,73 @@ func BenchmarkParser(b *testing.B) {
 	buf := bytes.NewBufferString(blogSnippet)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		u, _ := url.Parse("http://blog.example.com/progress-report")
-		_, err := ParseHTML(buf, "utf-8", u)
+		_, err := ParseHTML(buf, "utf-8", "https://blog.example.com/progress-report")
 		if err != nil && err != io.EOF {
 			b.Error(err)
 		}
 	}
 }
 
-// This HTML snippet is taken from the W3C Working Group website at http://www.w3.org/TR/microdata.
-var bookSnippet string = `
+func TestParseMicrodataPersonSnippet(t *testing.T) {
+	buf := bytes.NewBufferString(personSnippet)
+	data, err := ParseHTML(buf, "charset=utf-8", "https://jsonld.com/person/")
+	if err != nil {
+		t.Error(err)
+	}
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := string(b)
+	expected := `{"items":[{"type":["Person"],"properties":{"@context":["https://schema.org"],"address":[{"type":["PostalAddress"],"properties":{"addressLocality":["Colorado Springs"],"addressRegion":["CO"],"postalCode":["80840"],"streetAddress":["100 Main Street"]}}],"alumniOf":["Dartmouth"],"birthDate":["1979-10-12"],"birthPlace":["Philadelphia, PA"],"colleague":["https://www.example.com/JohnColleague.html","https://www.example.com/JameColleague.html"],"email":["info@example.com"],"gender":["female"],"height":["72 inches"],"image":["janedoe.jpg"],"jobTitle":["Research Assistant"],"memberOf":["Republican Party"],"name":["Jane Doe"],"nationality":["Albanian"],"sameAs":["https://www.facebook.com/","https://www.linkedin.com/","https://twitter.com/","https://instagram.com/","https://plus.google.com/"],"telephone":["(123) 456-6789"],"url":["https://www.example.com"]}}]}`
+	if result != expected {
+		t.Errorf("Result should have been \"%s\", but it was \"%s\"", expected, result)
+	}
+}
+
+func TestParseMicrodataRecipeSnippet(t *testing.T) {
+	buf := bytes.NewBufferString(recipeSnippet)
+	data, err := ParseHTML(buf, "charset=utf-8", "https://jsonld.com/recipe/")
+	if err != nil {
+		t.Error(err)
+	}
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := string(b)
+	expected := `{"items":[{"type":["Recipe"],"properties":{"@context":["https://schema.org"],"author":["Jake  Smith"],"cookTime":["PT2H"],"datePublished":["2015-05-18"],"description":["Your recipe description goes here"],"image":["https://www.example.com/images.jpg"],"interactionStatistic":[{"type":["InteractionCounter"],"properties":{"interactionType":["https://schema.org/Comment"],"userInteractionCount":["5"]}}],"name":["Rand's Cookies"],"nutrition":[{"type":["NutritionInformation"],"properties":{"calories":["1200 calories"],"carbohydrateContent":["12 carbs"],"fatContent":["9 grams fat"],"proteinContent":["9 grams of protein"]}}],"prepTime":["PT15M"],"recipeIngredient":["ingredient 1","ingredient 2","ingredient 3","ingredient 4","ingredient 5"],"recipeInstructions":["This is the long part, etc."],"recipeYield":["12 cookies"]}}]}`
+	if result != expected {
+		t.Errorf("Result should have been \"%s\", but it was \"%s\"", expected, result)
+	}
+}
+
+func TestParseMicrodataMultipleSnippet(t *testing.T) {
+	buf := bytes.NewBufferString(multipleSnippet)
+	data, err := ParseHTML(buf, "charset=utf-8", "https://www.w3.org/TR/json-ld11/")
+	if err != nil {
+		t.Error(err)
+	}
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := string(b)
+	expected := `{"items":[{"type":["Person"],"properties":{"@context":["https://schema.org/"],"@id":["https://digitalbazaar.com/author/dlongley/"],"name":["Dave Longley"]}},{"type":["Person"],"properties":{"@context":["https://schema.org/"],"@id":["https://greggkellogg.net/foaf#me"],"name":["Gregg Kellogg"]}}]}`
+	if result != expected {
+		t.Errorf("Result should have been \"%s\", but it was \"%s\"", expected, result)
+	}
+}
+
+// This HTML snippet is taken from the W3C Working Group website at https://html.spec.whatwg.org/multipage/microdata.html#global-identifiers-for-items
+var bookSnippet = `
 <dl itemscope
-    itemtype="http://vocab.example.net/book"
+    itemtype="https://vocab.example.net/book"
     itemid="urn:isbn:0-330-34032-8">
- <dt>Title</td>
+ <dt>Title</dt>
  <dd itemprop="title">The Reality Dysfunction</dd>
  <dt>Author</dt>
  <dd itemprop="author">Peter F. Hamilton</dd>
@@ -427,8 +464,8 @@ var bookSnippet string = `
  <dd><time itemprop="pubdate" datetime="1996-01-26">26 January 1996</time></dd>
 </dl>`
 
-// This HTML snippet is taken from the W3C Working Group website at http://www.w3.org/TR/microdata.
-var gallerySnippet string = `
+// This HTML snippet is taken from the W3C Working Group website at https://html.spec.whatwg.org/multipage/microdata.html#associating-names-with-items
+var gallerySnippet = `
 <!DOCTYPE HTML>
 <html>
  <head>
@@ -436,27 +473,27 @@ var gallerySnippet string = `
  </head>
  <body>
   <h1>My photos</h1>
-  <figure itemscope itemtype="http://n.whatwg.org/work" itemref="licenses">
+  <figure itemscope itemtype="https://n.whatwg.org/work" itemref="licenses">
    <img itemprop="work" src="images/house.jpeg" alt="A white house, boarded up, sits in a forest.">
    <figcaption itemprop="title">The house I found.</figcaption>
   </figure>
-  <figure itemscope itemtype="http://n.whatwg.org/work" itemref="licenses">
+  <figure itemscope itemtype="https://n.whatwg.org/work" itemref="licenses">
    <img itemprop="work" src="images/mailbox.jpeg" alt="Outside the house is a mailbox. It has a leaflet inside.">
    <figcaption itemprop="title">The mailbox.</figcaption>
   </figure>
   <footer>
    <p id="licenses">All images licensed under the <a itemprop="license"
-   href="http://www.opensource.org/licenses/mit-license.php">MIT
+   href="https://www.opensource.org/licenses/mit-license.php">MIT
    license</a>.</p>
   </footer>
  </body>
 </html>`
 
-// This HTML document is taken from the W3C Working Group website at http://www.w3.org/TR/microdata.
-var blogSnippet string = `
+// This HTML document is taken from the W3C Working Group website at https://html.spec.whatwg.org/multipage/microdata.html#json
+var blogSnippet = `
 <!DOCTYPE HTML>
 <title>My Blog</title>
-<article itemscope itemtype="http://schema.org/BlogPosting">
+<article itemscope itemtype="https://schema.org/BlogPosting">
  <header>
   <h1 itemprop="headline">Progress report</h1>
   <p><time itemprop="datePublished" datetime="2013-08-29">today</time></p>
@@ -466,20 +503,20 @@ var blogSnippet string = `
  putting his head in, but we got it down.</p>
  <section>
   <h1>Comments</h1>
-  <article itemprop="comment" itemscope itemtype="http://schema.org/UserComments" id="c1">
+  <article itemprop="comment" itemscope itemtype="https://schema.org/UserComments" id="c1">
    <link itemprop="url" href="#c1">
    <footer>
-    <p>Posted by: <span itemprop="creator" itemscope itemtype="http://schema.org/Person">
+    <p>Posted by: <span itemprop="creator" itemscope itemtype="https://schema.org/Person">
      <span itemprop="name">Greg</span>
     </span></p>
     <p><time itemprop="commentTime" datetime="2013-08-29">15 minutes ago</time></p>
    </footer>
    <p>Ha!</p>
   </article>
-  <article itemprop="comment" itemscope itemtype="http://schema.org/UserComments" id="c2">
+  <article itemprop="comment" itemscope itemtype="https://schema.org/UserComments" id="c2">
    <link itemprop="url" href="#c2">
    <footer>
-    <p>Posted by: <span itemprop="creator" itemscope itemtype="http://schema.org/Person">
+    <p>Posted by: <span itemprop="creator" itemscope itemtype="https://schema.org/Person">
      <span itemprop="name">Charlotte</span>
     </span></p>
     <p><time itemprop="commentTime" datetime="2013-08-29">5 minutes ago</time></p>
@@ -488,3 +525,97 @@ var blogSnippet string = `
   </article>
  </section>
 </article>`
+
+// This HTML document is taken from the "Steal Our JSON-LD" website at https://jsonld.com/person/
+var personSnippet = `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "address": {
+	"@type": "PostalAddress",
+	"addressLocality": "Colorado Springs",
+	"addressRegion": "CO",
+	"postalCode": "80840",
+	"streetAddress": "100 Main Street"
+  },
+  "colleague": [
+	"https://www.example.com/JohnColleague.html",
+	"https://www.example.com/JameColleague.html"
+  ],
+  "email": "info@example.com",
+  "image": "janedoe.jpg",
+  "jobTitle": "Research Assistant",
+  "name": "Jane Doe",
+  "alumniOf": "Dartmouth",
+  "birthPlace": "Philadelphia, PA",
+  "birthDate": "1979-10-12",
+  "height": "72 inches",
+  "gender": "female",
+  "memberOf": "Republican Party",
+  "nationality": "Albanian",
+  "telephone": "(123) 456-6789",
+  "url": "https://www.example.com",
+	"sameAs" : [ "https://www.facebook.com/",
+  "https://www.linkedin.com/",
+  "https://twitter.com/",
+  "https://instagram.com/",
+  "https://plus.google.com/"]
+}
+</script>`
+
+// This HTML document is taken from the "Steal Our JSON-LD" website at https://jsonld.com/recipe/
+var recipeSnippet = `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Recipe",
+  "author": "Jake  Smith",
+  "cookTime": "PT2H",
+  "datePublished": "2015-05-18",
+  "description": "Your recipe description goes here",
+  "image": "https://www.example.com/images.jpg",
+  "recipeIngredient": [
+	"ingredient 1",
+	"ingredient 2",
+	"ingredient 3",
+	"ingredient 4",
+	"ingredient 5"
+  ],
+  "interactionStatistic": {
+	"@type": "InteractionCounter",
+	"interactionType": "https://schema.org/Comment",
+	"userInteractionCount": "5"
+  },
+  "name": "Rand's Cookies",
+  "nutrition": {
+	"@type": "NutritionInformation",
+	"calories": "1200 calories",
+	"carbohydrateContent": "12 carbs",
+	"proteinContent": "9 grams of protein",
+	"fatContent": "9 grams fat"
+  },
+  "prepTime": "PT15M",
+  "recipeInstructions": "This is the long part, etc.",
+  "recipeYield": "12 cookies"
+}
+</script>`
+
+// This HTML document is taken from the "W3.org" website at https://www.w3.org/TR/json-ld11/
+var multipleSnippet = `<p>Data describing Dave</p>
+<script id="dave" type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@id": "https://digitalbazaar.com/author/dlongley/",
+  "@type": "Person",
+  "name": "Dave Longley"
+}
+</script>
+
+<p>Data describing Gregg</p>
+<script id="gregg" type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@id": "https://greggkellogg.net/foaf#me",
+  "@type": "Person",
+  "name": "Gregg Kellogg"
+}
+</script>`

@@ -1,13 +1,9 @@
-// Copyright 2015 Lars Wiegman. All rights reserved. Use of this source code is
-// governed by a BSD-style license that can be found in the LICENSE file.
-
 package main
 
 import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"net/url"
 	"os"
 	"text/template"
 
@@ -22,7 +18,7 @@ func main() {
 	var data *microdata.Microdata
 	var err error
 
-	baseURL := flag.String("base-url", "http://example.com", "base url to use for the data in the stdin stream.")
+	baseURL := flag.String("base-url", "https://example.com", "base url to use for the data in the stdin stream.")
 	contentType := flag.String("content-type", "", "content type of the data in the stdin stream.")
 	format := flag.String("format", "{{. |jsonMarshal }}", `alternate format for the output of the
 	microdata, using the syntax of package html/template. The default output is
@@ -47,10 +43,10 @@ func main() {
 `)
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s [options] [url]:\n", os.Args[0])
+		_, _ = fmt.Fprintf(os.Stderr, "Usage of %s [options] [url]:\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprint(os.Stderr, "\nExtract the HTML Microdata from a HTML5 document. Format to JSON or using the syntax of package html/template.")
-		fmt.Fprint(os.Stderr, " Provide an URL to a valid HTML5 document or stream a valid HTML5 document through stdin.\n")
+		_, _ = fmt.Fprint(os.Stderr, "\nExtract the HTML Microdata and JSON-LD schemas from a HTML document. Format to JSON or using the syntax of package html/template.")
+		_, _ = fmt.Fprint(os.Stderr, " Provide an URL to a valid HTML document or stream a valid HTML document through stdin.\n")
 	}
 
 	flag.Parse()
@@ -58,12 +54,11 @@ func main() {
 	// Fetch and parse microdata
 	switch len(flag.Args()) {
 	case 0:
-		u, err := url.Parse(*baseURL)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		data, err = microdata.ParseHTML(os.Stdin, *contentType, u)
+		data, err = microdata.ParseHTML(os.Stdin, *contentType, *baseURL)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

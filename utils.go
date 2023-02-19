@@ -12,6 +12,16 @@ func getAttr(attribute string, node *html.Node) (string, bool) {
 	return "", false
 }
 
+// checkAttr returns true if the given node has the attribute with the expected value.
+func checkAttr(attribute, expectedValue string, node *html.Node) bool {
+	for _, a := range node.Attr {
+		if a.Key == attribute && a.Val == expectedValue {
+			return true
+		}
+	}
+	return false
+}
+
 // walkNodes traverses the node tree executing the given functions.
 func walkNodes(n *html.Node, f func(*html.Node)) {
 	if n != nil {

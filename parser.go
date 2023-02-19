@@ -2,12 +2,13 @@ package microdata
 
 import (
 	"bytes"
-	"golang.org/x/net/html"
-	"golang.org/x/net/html/atom"
-	"golang.org/x/net/html/charset"
-	"io"
+	"log"
 	"net/url"
 	"strings"
+
+	"github.com/astappiev/fixjson"
+	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 type parser struct {
@@ -19,14 +20,20 @@ type parser struct {
 
 // parse returns the microdata from the parser's node tree.
 func (p *parser) parse() (*Microdata, error) {
-	toplevelNodes := []*html.Node{}
+	var toplevelNodes []*html.Node
+	var jsonNodes []*html.Node
 
 	walkNodes(p.tree, func(n *html.Node) {
+		if n.DataAtom == atom.Script && checkAttr("type", "application/ld+json", n) {
+			jsonNodes = append(jsonNodes, n)
+		}
+
 		if _, ok := getAttr("itemscope", n); ok {
 			if _, ok := getAttr("itemprop", n); !ok {
 				toplevelNodes = append(toplevelNodes, n)
 			}
 		}
+
 		if id, ok := getAttr("id", n); ok {
 			p.identifiedNodes[id] = n
 		}
@@ -39,11 +46,85 @@ func (p *parser) parse() (*Microdata, error) {
 		p.readItem(item, node, true)
 	}
 
+	for _, node := range jsonNodes {
+		if node.FirstChild != nil {
+			data := []byte(node.FirstChild.Data)
+
+			var jsonMap interface{}
+			err := fixjson.Unmarshal(data, &jsonMap)
+			if err == nil {
+				p.readJsonItem(nil, jsonMap)
+			} else {
+				log.Println("Error parsing json:", err)
+			}
+		}
+	}
+
 	return p.data, nil
 }
 
-// readItem traverses the given node tree, applying relevant attributes to the
-// given item.
+func (p *parser) readJsonItem(item *Item, mi interface{}) {
+	switch mi.(type) {
+	case []interface{}: // assume this is array of items
+		for _, i := range mi.([]interface{}) {
+			p.readJsonItem(item, i)
+		}
+	case map[string]interface{}: // assume this is a root of an item
+		m := mi.(map[string]interface{})
+
+		if item == nil {
+			item = NewItem()
+			p.data.addItem(item)
+		}
+
+		if m["@type"] != nil {
+			p.readType(item, m["@type"])
+		}
+
+		// sometimes they forget about @ char :/
+		if m["type"] != nil {
+			p.readType(item, m["type"])
+		}
+
+		for k, v := range m {
+			p.readJsonProp(item, k, v)
+		}
+	}
+}
+
+func (p *parser) readType(item *Item, val interface{}) {
+	switch vt := val.(type) {
+	case []interface{}:
+		for _, sv := range vt {
+			p.readType(item, sv)
+		}
+	case string:
+		item.addType(val.(string))
+	}
+}
+
+// readJsonProp depending on value type, adds the value to the given item.
+func (p *parser) readJsonProp(item *Item, key string, value interface{}) {
+	if key == "@type" {
+		return
+	}
+
+	switch vt := value.(type) {
+	case []interface{}:
+		for _, sv := range vt {
+			p.readJsonProp(item, key, sv)
+		}
+	case map[string]interface{}:
+		newItem := NewItem()
+		item.addItem(key, newItem)
+		p.readJsonItem(newItem, value)
+	case nil:
+	default:
+		item.addProperty(key, value)
+	}
+}
+
+// readItem traverses the given node tree, applying relevant attributes to the given item.
 func (p *parser) readItem(item *Item, node *html.Node, isToplevel bool) {
 	itemprops, hasProp := getAttr("itemprop", node)
 	_, hasScope := getAttr("itemscope", node)
@@ -65,7 +146,7 @@ func (p *parser) readItem(item *Item, node *html.Node, isToplevel bool) {
 		if s := p.getValue(node); len(s) > 0 {
 			for _, propName := range strings.Split(itemprops, " ") {
 				if len(propName) > 0 {
-					item.addString(propName, s)
+					item.addProperty(propName, s)
 				}
 			}
 		}
@@ -114,8 +195,19 @@ func (p *parser) getValue(node *html.Node) string {
 		if value, ok := getAttr("content", node); ok {
 			propValue = value
 		}
-	case atom.Audio, atom.Embed, atom.Iframe, atom.Img, atom.Source, atom.Track, atom.Video:
+	case atom.Audio, atom.Embed, atom.Iframe, atom.Source, atom.Track, atom.Video:
 		if value, ok := getAttr("src", node); ok {
+			if u, err := p.baseURL.Parse(value); err == nil {
+				propValue = u.String()
+			}
+		}
+	case atom.Img:
+		value, ok := getAttr("data-src", node)
+		if !ok {
+			value, ok = getAttr("src", node)
+		}
+
+		if ok {
 			if u, err := p.baseURL.Parse(value); err == nil {
 				propValue = u.String()
 			}
@@ -153,20 +245,10 @@ func (p *parser) getValue(node *html.Node) string {
 	return propValue
 }
 
-// newParser returns a parser that converts the content of r to UTF-8 based on the content type of r.
-func newParser(r io.Reader, contentType string, baseURL *url.URL) (*parser, error) {
-	r, err := charset.NewReader(r, contentType)
-	if err != nil {
-		return nil, err
-	}
-
-	tree, err := html.Parse(r)
-	if err != nil {
-		return nil, err
-	}
-
+// newParser returns a parser that converts the contents of the given node tree to microdata.
+func newParser(root *html.Node, baseURL *url.URL) (*parser, error) {
 	return &parser{
-		tree:            tree,
+		tree:            root,
 		data:            &Microdata{},
 		baseURL:         baseURL,
 		identifiedNodes: make(map[string]*html.Node),
