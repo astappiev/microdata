@@ -54,10 +54,6 @@ func main() {
 	// Fetch and parse microdata
 	switch len(flag.Args()) {
 	case 0:
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
 		data, err = microdata.ParseHTML(os.Stdin, *contentType, *baseURL)
 		if err != nil {
 			fmt.Println(err)

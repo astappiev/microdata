@@ -1,5 +1,5 @@
-github.com/astappiev/fixjson v0.0.0-20220629200359-49a91340faab h1:wfNmNT4kXhCS1pHYyQm1CtMVS5YLxiJdnlmdpAKE55M=
-github.com/astappiev/fixjson v0.0.0-20220629200359-49a91340faab/go.mod h1:/BLEEh9uxgi00+c2DOzMkNTe3Josq/sNT63HvaqRkSY=
+github.com/astappiev/fixjson v1.0.0 h1:3uwjJikDuXASswLitHt8Xvma6+Zbhhq7XmKOT/sCvS0=
+github.com/astappiev/fixjson v1.0.0/go.mod h1:/BLEEh9uxgi00+c2DOzMkNTe3Josq/sNT63HvaqRkSY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

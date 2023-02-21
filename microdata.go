@@ -17,7 +17,7 @@ func ParseURL(urlStr string) (*Microdata, error) {
 	}
 
 	contentType := resp.Header.Get("Content-Type")
-	return ParseHTML(resp.Body, contentType, urlStr)
+	return ParseHTML(resp.Body, contentType, resp.Request.URL.String())
 }
 
 // ParseHTML parses the HTML document available in the given reader and returns the microdata. The given url is

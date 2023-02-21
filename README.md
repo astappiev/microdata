@@ -62,7 +62,7 @@ func main() {
 Install the command line tool:
 
 ```sh
-go get -u github.com/astappiev/microdata/cmd/microdata
+go install github.com/astappiev/microdata/cmd/microdata
 ```
 
 Parse an URL:
