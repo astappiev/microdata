@@ -13,6 +13,11 @@ func (m *Microdata) addItem(item *Item) {
 	m.Items = append(m.Items, item)
 }
 
+// GetFirstOfSchemaType returns the first item of the given type with possible https://schema.org/ context.
+func (m *Microdata) GetFirstOfSchemaType(itemType string) *Item {
+	return m.GetFirstOfType(itemType, "http://schema.org/"+itemType, "https://schema.org/"+itemType)
+}
+
 // GetFirstOfType returns the first item of the given type.
 func (m *Microdata) GetFirstOfType(itemType ...string) *Item {
 	for _, item := range m.Items {
@@ -57,6 +62,10 @@ func (i *Item) addProperty(key string, value interface{}) {
 // addItem adds the property, value pair to the properties map. It appends to any existing property.
 func (i *Item) addItem(key string, value *Item) {
 	i.Properties[key] = append(i.Properties[key], value)
+}
+
+func (i *Item) IsOfSchemaType(itemType string) bool {
+	return i.IsOfType(itemType, "http://schema.org/"+itemType, "https://schema.org/"+itemType)
 }
 
 func (i *Item) IsOfType(itemType ...string) bool {
