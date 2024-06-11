@@ -10,7 +10,7 @@ import (
 	"github.com/astappiev/microdata"
 )
 
-var fnmap = template.FuncMap{
+var fnMap = template.FuncMap{
 	"jsonMarshal": jsonMarshal,
 }
 
@@ -67,7 +67,7 @@ func main() {
 		}
 	}
 
-	t := template.Must(template.New("format").Funcs(fnmap).Parse(*format))
+	t := template.Must(template.New("format").Funcs(fnMap).Parse(*format))
 	if err := t.Execute(os.Stdout, data); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -1,13 +1,10 @@
 module github.com/astappiev/microdata
 
-go 1.18
+go 1.21
 
 require (
-	github.com/astappiev/fixjson v1.0.0
-	golang.org/x/net v0.7.0
+	github.com/astappiev/fixjson v1.0.1
+	golang.org/x/net v0.26.0
 )
 
-require (
-	github.com/stretchr/testify v1.8.1 // indirect
-	golang.org/x/text v0.7.0 // indirect
-)
+require golang.org/x/text v0.16.0 // indirect

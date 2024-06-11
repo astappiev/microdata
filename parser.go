@@ -150,7 +150,7 @@ func (p *parser) readItem(item *Item, node *html.Node, isToplevel bool) {
 				}
 			}
 		}
-	case hasScope && !hasProp && !isToplevel:
+	case hasScope && !isToplevel:
 		return
 	}
 

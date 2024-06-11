@@ -51,8 +51,8 @@ func main() {
 	}
 
     // print json schema
-    json, _ := json.MarshalIndent(data, "", "  ")
-    fmt.Println(string(json))
+    jsonSchema, _ := json.MarshalIndent(data, "", "  ")
+    fmt.Println(string(jsonSchema))
 }
 ```
 
@@ -65,7 +65,7 @@ Install the command line tool:
 go install github.com/astappiev/microdata/cmd/microdata
 ```
 
-Parse an URL:
+Parse a URL:
 
 ```sh
 microdata https://www.gog.com/game/...

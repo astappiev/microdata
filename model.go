@@ -140,6 +140,6 @@ func (i *Item) CountPaths(prefix string, paths *map[string]int) {
 func NewItem() *Item {
 	return &Item{
 		Types:      make([]string, 0),
-		Properties: make(PropertyMap, 0),
+		Properties: make(PropertyMap),
 	}
 }
