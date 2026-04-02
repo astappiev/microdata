@@ -50,7 +50,7 @@ func (p *parser) parse() (*Microdata, error) {
 		if node.FirstChild != nil {
 			data := []byte(node.FirstChild.Data)
 
-			var jsonMap interface{}
+			var jsonMap any
 			err := fixjson.Unmarshal(data, &jsonMap)
 			if err == nil {
 				p.readJsonItem(nil, jsonMap)
@@ -63,58 +63,56 @@ func (p *parser) parse() (*Microdata, error) {
 	return p.data, nil
 }
 
-func (p *parser) readJsonItem(item *Item, mi interface{}) {
-	switch mi.(type) {
-	case []interface{}: // assume this is array of items
-		for _, i := range mi.([]interface{}) {
+func (p *parser) readJsonItem(item *Item, mi any) {
+	switch v := mi.(type) {
+	case []any: // assume this is array of items
+		for _, i := range v {
 			p.readJsonItem(item, i)
 		}
-	case map[string]interface{}: // assume this is a root of an item
-		m := mi.(map[string]interface{})
-
+	case map[string]any: // assume this is a root of an item
 		if item == nil {
 			item = NewItem()
 			p.data.addItem(item)
 		}
 
-		if m["@type"] != nil {
-			p.readType(item, m["@type"])
+		if v["@type"] != nil {
+			p.readType(item, v["@type"])
 		}
 
 		// sometimes they forget about @ char :/
-		if m["type"] != nil {
-			p.readType(item, m["type"])
+		if v["type"] != nil {
+			p.readType(item, v["type"])
 		}
 
-		for k, v := range m {
-			p.readJsonProp(item, k, v)
+		for k, val := range v {
+			p.readJsonProp(item, k, val)
 		}
 	}
 }
 
-func (p *parser) readType(item *Item, val interface{}) {
+func (p *parser) readType(item *Item, val any) {
 	switch vt := val.(type) {
-	case []interface{}:
+	case []any:
 		for _, sv := range vt {
 			p.readType(item, sv)
 		}
 	case string:
-		item.addType(val.(string))
+		item.addType(vt)
 	}
 }
 
 // readJsonProp depending on value type, adds the value to the given item.
-func (p *parser) readJsonProp(item *Item, key string, value interface{}) {
+func (p *parser) readJsonProp(item *Item, key string, value any) {
 	if key == "@type" {
 		return
 	}
 
 	switch vt := value.(type) {
-	case []interface{}:
+	case []any:
 		for _, sv := range vt {
 			p.readJsonProp(item, key, sv)
 		}
-	case map[string]interface{}:
+	case map[string]any:
 		newItem := NewItem()
 		item.addItem(key, newItem)
 		p.readJsonItem(newItem, value)

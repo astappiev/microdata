@@ -1,11 +1,15 @@
 package microdata
 
-import "golang.org/x/net/html"
+import (
+	"slices"
+
+	"golang.org/x/net/html"
+)
 
 // getAttr returns the value associated with the given attribute from the given node.
 func getAttr(attribute string, node *html.Node) (string, bool) {
 	for _, attr := range node.Attr {
-		if attribute == attr.Key {
+		if attr.Key == attribute {
 			return attr.Val, true
 		}
 	}
@@ -14,12 +18,9 @@ func getAttr(attribute string, node *html.Node) (string, bool) {
 
 // checkAttr returns true if the given node has the attribute with the expected value.
 func checkAttr(attribute, expectedValue string, node *html.Node) bool {
-	for _, a := range node.Attr {
-		if a.Key == attribute && a.Val == expectedValue {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(node.Attr, func(attr html.Attribute) bool {
+		return attr.Key == attribute && attr.Val == expectedValue
+	})
 }
 
 // walkNodes traverses the node tree executing the given functions.

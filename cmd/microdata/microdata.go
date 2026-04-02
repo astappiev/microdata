@@ -24,7 +24,7 @@ func main() {
 	microdata, using the syntax of package html/template. The default output is
 	equivalent to -f '{{. |jsonMarshal }}'. The struct being passed to the
 	template is:
-		
+
 		type Microdata struct
 			Items []*Item 'json:"items"'
 		}
@@ -36,8 +36,8 @@ func main() {
 		}
 
 		type PropertyMap map[string]ValueList
-		
-		type ValueList []interface{}
+
+		type ValueList []any
 
 	The template function "jsonMarshal" calls json.Marshal
 `)
@@ -75,7 +75,7 @@ func main() {
 }
 
 // jsonMarshal encodes the given data to JSON.
-func jsonMarshal(data interface{}) (string, error) {
+func jsonMarshal(data any) (string, error) {
 	b, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return "", err

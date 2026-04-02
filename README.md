@@ -16,6 +16,7 @@ go get -u github.com/astappiev/microdata
 ```
 
 Use cases:
+
 ```go
 // Pass a URL to the `ParseURL` function.
 data, err := microdata.ParseURL("https://example.com/page")
@@ -28,6 +29,7 @@ data, err := microdata.ParseNode(reader, contentType, baseURL)
 ```
 
 An example program:
+
 ```go
 package main
 
@@ -55,7 +57,6 @@ func main() {
     fmt.Println(string(jsonSchema))
 }
 ```
-
 
 ## Command line use
 
