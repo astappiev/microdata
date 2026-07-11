@@ -5,6 +5,9 @@ on:
     branches: [ "main" ]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -24,5 +27,10 @@ jobs:
       - name: Go vet
         run: go vet ./...
 
+      - name: Run Golint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+
       - name: Test
-        run: go test ./...
+        run: go test -race ./...

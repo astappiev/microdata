@@ -2,7 +2,6 @@ package microdata
 
 import (
 	"bytes"
-	"log"
 	"net/url"
 	"strings"
 
@@ -19,13 +18,20 @@ type parser struct {
 }
 
 // parse returns the microdata from the parser's node tree.
-func (p *parser) parse() (*Microdata, error) {
+func (p *parser) parse() *Microdata {
 	var toplevelNodes []*html.Node
 	var jsonNodes []*html.Node
 
 	walkNodes(p.tree, func(n *html.Node) {
-		if n.DataAtom == atom.Script && checkAttr("type", "application/ld+json", n) {
-			jsonNodes = append(jsonNodes, n)
+		if n.DataAtom == atom.Script {
+			if t, ok := getAttr("type", n); ok {
+				if idx := strings.IndexByte(t, ';'); idx >= 0 {
+					t = t[:idx]
+				}
+				if strings.EqualFold(strings.TrimSpace(t), "application/ld+json") {
+					jsonNodes = append(jsonNodes, n)
+				}
+			}
 		}
 
 		if _, ok := getAttr("itemscope", n); ok {
@@ -42,8 +48,9 @@ func (p *parser) parse() (*Microdata, error) {
 	for _, node := range toplevelNodes {
 		item := NewItem()
 		p.data.addItem(item)
-		p.readAttr(item, node)
-		p.readItem(item, node, true)
+		visited := make(map[*html.Node]bool)
+		p.readAttr(item, node, visited)
+		p.readItem(item, node, true, visited)
 	}
 
 	for _, node := range jsonNodes {
@@ -53,21 +60,19 @@ func (p *parser) parse() (*Microdata, error) {
 			var jsonMap any
 			err := fixjson.Unmarshal(data, &jsonMap)
 			if err == nil {
-				p.readJsonItem(nil, jsonMap)
-			} else {
-				log.Println("Error parsing json:", err)
+				p.readJSONItem(nil, jsonMap)
 			}
 		}
 	}
 
-	return p.data, nil
+	return p.data
 }
 
-func (p *parser) readJsonItem(item *Item, mi any) {
-	switch v := mi.(type) {
+func (p *parser) readJSONItem(item *Item, value any) {
+	switch v := value.(type) {
 	case []any: // assume this is array of items
 		for _, i := range v {
-			p.readJsonItem(item, i)
+			p.readJSONItem(item, i)
 		}
 	case map[string]any: // assume this is a root of an item
 		if item == nil {
@@ -85,7 +90,7 @@ func (p *parser) readJsonItem(item *Item, mi any) {
 		}
 
 		for k, val := range v {
-			p.readJsonProp(item, k, val)
+			p.readJSONProp(item, k, val)
 		}
 	}
 }
@@ -101,21 +106,28 @@ func (p *parser) readType(item *Item, val any) {
 	}
 }
 
-// readJsonProp depending on value type, adds the value to the given item.
-func (p *parser) readJsonProp(item *Item, key string, value any) {
+// readJSONProp depending on value type, adds the value to the given item.
+func (p *parser) readJSONProp(item *Item, key string, value any) {
 	if key == "@type" {
 		return
+	}
+
+	if key == "type" {
+		switch value.(type) {
+		case string, []any:
+			return
+		}
 	}
 
 	switch vt := value.(type) {
 	case []any:
 		for _, sv := range vt {
-			p.readJsonProp(item, key, sv)
+			p.readJSONProp(item, key, sv)
 		}
 	case map[string]any:
 		newItem := NewItem()
-		item.addItem(key, newItem)
-		p.readJsonItem(newItem, value)
+		item.addProperty(key, newItem)
+		p.readJSONItem(newItem, value)
 	case nil:
 	default:
 		item.addProperty(key, value)
@@ -123,29 +135,31 @@ func (p *parser) readJsonProp(item *Item, key string, value any) {
 }
 
 // readItem traverses the given node tree, applying relevant attributes to the given item.
-func (p *parser) readItem(item *Item, node *html.Node, isToplevel bool) {
+func (p *parser) readItem(item *Item, node *html.Node, isToplevel bool, visited map[*html.Node]bool) {
+	if visited[node] {
+		return
+	}
+	visited[node] = true
+	defer delete(visited, node)
+
 	itemprops, hasProp := getAttr("itemprop", node)
 	_, hasScope := getAttr("itemscope", node)
 
 	switch {
 	case hasScope && hasProp:
 		subItem := NewItem()
-		p.readAttr(subItem, node)
-		for _, propName := range strings.Split(itemprops, " ") {
-			if len(propName) > 0 {
-				item.addItem(propName, subItem)
-			}
+		p.readAttr(subItem, node, visited)
+		for propName := range strings.FieldsSeq(itemprops) {
+			item.addProperty(propName, subItem)
 		}
 		for c := node.FirstChild; c != nil; c = c.NextSibling {
-			p.readItem(subItem, c, false)
+			p.readItem(subItem, c, false, visited)
 		}
 		return
 	case !hasScope && hasProp:
 		if s := p.getValue(node); len(s) > 0 {
-			for _, propName := range strings.Split(itemprops, " ") {
-				if len(propName) > 0 {
-					item.addProperty(propName, s)
-				}
+			for propName := range strings.FieldsSeq(itemprops) {
+				item.addProperty(propName, s)
 			}
 		}
 	case hasScope && !isToplevel:
@@ -153,17 +167,15 @@ func (p *parser) readItem(item *Item, node *html.Node, isToplevel bool) {
 	}
 
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		p.readItem(item, c, false)
+		p.readItem(item, c, false, visited)
 	}
 }
 
 // readAttr applies relevant attributes from the given node to the given item.
-func (p *parser) readAttr(item *Item, node *html.Node) {
+func (p *parser) readAttr(item *Item, node *html.Node, visited map[*html.Node]bool) {
 	if s, ok := getAttr("itemtype", node); ok {
-		for _, itemtype := range strings.Split(s, " ") {
-			if len(itemtype) > 0 {
-				item.addType(itemtype)
-			}
+		for itemtype := range strings.FieldsSeq(s) {
+			item.addType(itemtype)
 		}
 
 		if s, ok := getAttr("itemid", node); ok {
@@ -174,11 +186,9 @@ func (p *parser) readAttr(item *Item, node *html.Node) {
 	}
 
 	if s, ok := getAttr("itemref", node); ok {
-		for _, itemref := range strings.Split(s, " ") {
-			if len(itemref) > 0 {
-				if n, ok := p.identifiedNodes[itemref]; ok {
-					p.readItem(item, n, false)
-				}
+		for itemref := range strings.FieldsSeq(s) {
+			if n, ok := p.identifiedNodes[itemref]; ok {
+				p.readItem(item, n, false, visited)
 			}
 		}
 	}
@@ -200,12 +210,19 @@ func (p *parser) getValue(node *html.Node) string {
 			}
 		}
 	case atom.Img:
+		// Prefer data-src over src for lazy-loading support
 		value, ok := getAttr("data-src", node)
 		if !ok {
 			value, ok = getAttr("src", node)
 		}
 
 		if ok {
+			if u, err := p.baseURL.Parse(value); err == nil {
+				propValue = u.String()
+			}
+		}
+	case atom.Object:
+		if value, ok := getAttr("data", node); ok {
 			if u, err := p.baseURL.Parse(value); err == nil {
 				propValue = u.String()
 			}
@@ -225,7 +242,8 @@ func (p *parser) getValue(node *html.Node) string {
 			propValue = value
 		}
 	default:
-		// The "content" attribute can be found on other tags besides the meta tag.
+		// The "content" attribute can be found on other tags besides the meta tag,
+		// and is used before falling back to text content (RDFa-style).
 		if value, ok := getAttr("content", node); ok {
 			propValue = value
 			break
@@ -244,11 +262,11 @@ func (p *parser) getValue(node *html.Node) string {
 }
 
 // newParser returns a parser that converts the contents of the given node tree to microdata.
-func newParser(root *html.Node, baseURL *url.URL) (*parser, error) {
+func newParser(root *html.Node, baseURL *url.URL) *parser {
 	return &parser{
 		tree:            root,
 		data:            &Microdata{},
 		baseURL:         baseURL,
 		identifiedNodes: make(map[string]*html.Node),
-	}, nil
+	}
 }

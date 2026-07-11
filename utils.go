@@ -1,8 +1,6 @@
 package microdata
 
 import (
-	"slices"
-
 	"golang.org/x/net/html"
 )
 
@@ -16,19 +14,13 @@ func getAttr(attribute string, node *html.Node) (string, bool) {
 	return "", false
 }
 
-// checkAttr returns true if the given node has the attribute with the expected value.
-func checkAttr(attribute, expectedValue string, node *html.Node) bool {
-	return slices.ContainsFunc(node.Attr, func(attr html.Attribute) bool {
-		return attr.Key == attribute && attr.Val == expectedValue
-	})
-}
-
 // walkNodes traverses the node tree executing the given functions.
-func walkNodes(n *html.Node, f func(*html.Node)) {
-	if n != nil {
+func walkNodes(root *html.Node, f func(*html.Node)) {
+	if root == nil {
+		return
+	}
+	f(root)
+	for n := range root.Descendants() {
 		f(n)
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			walkNodes(c, f)
-		}
 	}
 }

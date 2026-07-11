@@ -21,12 +21,17 @@ Use cases:
 // Pass a URL to the `ParseURL` function.
 data, err := microdata.ParseURL("https://example.com/page")
 
+// Pass a context and a URL to the `ParseURLWithContext` function.
+data, err := microdata.ParseURLWithContext(ctx, "https://example.com/page")
+
 // Pass a `io.Reader`, content-type and a base URL to the `ParseHTML` function.
 data, err := microdata.ParseHTML(reader, contentType, baseURL)
 
-// Pass a `html.Node`, content-type and a base URL to the `ParseNode` function.
-data, err := microdata.ParseNode(reader, contentType, baseURL)
+// Pass a `html.Node` and a base URL to the `ParseNode` function.
+data, err := microdata.ParseNode(rootNode, baseURL)
 ```
+
+> **Note**: The parser tolerates JSON-LD `type` attributes without the leading `@` character.
 
 An example program:
 

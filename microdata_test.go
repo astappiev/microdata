@@ -3,7 +3,6 @@ package microdata
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,7 +15,7 @@ func TestParseItemScope(t *testing.T) {
 			<p>My name is <span itemprop="name">Penelope</span>.</p>
 		</div>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	result := len(data.Items[0].Properties)
 	expected := 1
@@ -31,7 +30,7 @@ func TestParseItemType(t *testing.T) {
 			<p>My name is <span itemprop="name">Penelope</span>.</p>
 		</div>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	result := data.Items[0].Types[0]
 	expected := "https://example.com/Person"
@@ -58,12 +57,28 @@ func TestParseItemRef(t *testing.T) {
 		{"description", "A homebound photographer spies on his neighbours."},
 	}
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	for _, test := range testTable {
 		if result := data.Items[0].Properties[test.propName][0].(string); result != test.expected {
 			t.Errorf("Result should have been \"%s\", but it was \"%s\"", test.expected, result)
 		}
+	}
+}
+
+func TestParseItemRefLoop(t *testing.T) {
+	html := `
+		<div itemscope itemtype="https://example.com/Top">
+		  <div id="loop">
+		    <span itemscope itemprop="p" itemref="loop">x</span>
+		  </div>
+		</div>`
+
+	// This should not crash or panic.
+	data := parseData(t, html)
+
+	if len(data.Items) != 1 {
+		t.Fatalf("Expected 1 item, got %d", len(data.Items))
 	}
 }
 
@@ -73,7 +88,7 @@ func TestParseItemProp(t *testing.T) {
 			<p>My name is <span itemprop="name">Penelope</span>.</p>
 		</div>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	result := data.Items[0].Properties["name"][0].(string)
 	expected := "Penelope"
@@ -89,7 +104,7 @@ func TestParseItemId(t *testing.T) {
 			<li itemprop="author">Fred Hoyle</li>
 		</ul>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	result := data.Items[0].ID
 	expected := "urn:isbn:978-0141196404"
@@ -119,7 +134,7 @@ func TestParseHref(t *testing.T) {
 		{"linkTest", "https://example.com/cde"},
 	}
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	for _, test := range testTable {
 		if result := data.Items[0].Properties[test.propName][0].(string); result != test.expected {
@@ -153,7 +168,7 @@ func TestParseSrc(t *testing.T) {
 		{"videoTest", "https://example.com/ghi"},
 	}
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	for _, test := range testTable {
 		if result := data.Items[0].Properties[test.propName][0].(string); result != test.expected {
@@ -168,7 +183,7 @@ func TestParseMetaContent(t *testing.T) {
 			<meta itemprop="length" content="1.70" />
 		</html>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	result := data.Items[0].Properties["length"][0].(string)
 	expected := "1.70"
@@ -192,7 +207,7 @@ func TestParseValue(t *testing.T) {
 		{"volume", "25"},
 	}
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	for _, test := range testTable {
 		if result := data.Items[0].Properties[test.propName][0].(string); result != test.expected {
@@ -207,7 +222,7 @@ func TestParseDatetime(t *testing.T) {
 			<time itemprop="birthDate" datetime="1993-10-02">22 years</time>
 		</div>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	result := data.Items[0].Properties["birthDate"][0].(string)
 	expected := "1993-10-02"
@@ -222,7 +237,7 @@ func TestParseText(t *testing.T) {
 			<span itemprop="price">3.95</span>
 		</div>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	result := data.Items[0].Properties["price"][0].(string)
 	expected := "3.95"
@@ -237,7 +252,7 @@ func TestParseMultiItemTypes(t *testing.T) {
 			<span itemprop="name">ZooParc Overloon</span>
 		</div>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	result := len(data.Items[0].Types)
 	expected := 2
@@ -253,7 +268,7 @@ func TestJSON(t *testing.T) {
 			<p>I am <date itemprop="age" value="22">22 years old.</span>.</p>
 		</div>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	b, err := json.Marshal(data)
 	if err != nil {
@@ -268,9 +283,9 @@ func TestJSON(t *testing.T) {
 
 func TestParseHTML(t *testing.T) {
 	buf := bytes.NewBufferString(gallerySnippet)
-	_, result := ParseHTML(buf, "charset=utf-8", "https://blog.example.com/progress-report")
-	if result != nil {
-		t.Errorf("Result should have been nil, but it was \"%s\"", result)
+	_, err := ParseHTML(buf, "charset=utf-8", "https://blog.example.com/progress-report")
+	if err != nil {
+		t.Errorf("Result should have been nil, but it was \"%s\"", err)
 	}
 }
 
@@ -309,7 +324,7 @@ func TestNestedItems(t *testing.T) {
 			</div>
 		</div>`
 
-	data := ParseData(html, t)
+	data := parseData(t, html)
 
 	b, err := json.Marshal(data)
 	if err != nil {
@@ -322,12 +337,13 @@ func TestNestedItems(t *testing.T) {
 	}
 }
 
-func ParseData(html string, t *testing.T) *Microdata {
+func parseData(t *testing.T, html string) *Microdata {
+	t.Helper()
 	r := strings.NewReader(html)
 
 	data, err := ParseHTML(r, "charset=utf-8", "https://example.com")
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	return data
 }
@@ -387,12 +403,10 @@ func TestParseW3CBlogSnippet(t *testing.T) {
 }
 
 func BenchmarkParser(b *testing.B) {
-	buf := bytes.NewBufferString(blogSnippet)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := ParseHTML(buf, "utf-8", "https://blog.example.com/progress-report")
-		if err != nil && err != io.EOF {
-			b.Error(err)
+	for b.Loop() {
+		_, err := ParseHTML(strings.NewReader(blogSnippet), "utf-8", "https://blog.example.com/progress-report")
+		if err != nil {
+			b.Fatal(err)
 		}
 	}
 }
